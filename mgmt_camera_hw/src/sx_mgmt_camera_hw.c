@@ -591,11 +591,11 @@ static void default_status(
 
    // Now set anything non-zero
    state->timeout = 5000;     // 5s delay before take image
-   state->width = 1280;       // Default to 1080p
-   state->height = 720;
+   state->width = 640;       // Default to 1080p
+   state->height = 480;
    state->bitrate = 1000000; // This is a decent default bitrate for 1080p
    state->framerate = 30;
-   state->intraperiod = 0;    // Not set
+   state->intraperiod = 10;    // Not set
    state->demoMode = 0;
    state->demoInterval = 250; // ms
    state->immutableInput = 1;
@@ -622,7 +622,7 @@ static void encoder_buffer_callback(
     // We pass our file handle and other stuff in via the userdata field.
 
 
-    printf("callback current time = %d\n", get_time_ns());
+//    printf("callback current time = %d\n", get_time_ns());
 
 
     PORT_USERDATA *pData = (PORT_USERDATA *) port->userdata;
@@ -1215,7 +1215,7 @@ sSX_CAMERA_HW_BUFFER * sx_camera_hw_get(
     }
 
     unsigned int len = sx_queue_len_get(f_nal_queue);
-    printf("f_nal_queue len = %d\n", len);
+    // printf("f_nal_queue len = %d\n", len);
 
     return (sSX_CAMERA_HW_BUFFER *) sx_queue_pull(f_nal_queue);
 }

@@ -1,5 +1,6 @@
 MODULE_DIR := .
-
+#CC=/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-cc
+LD=/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-ld
 include $(MODULE_DIR)/makefile_includes.make
 
 MODULE_INC := $(MODULE_DIR)/inc
@@ -12,7 +13,7 @@ DEP_INCLUDES := $(foreach depModule, $(DEP_INC), $(addprefix -I, $(sort $(dir $(
 
 SYS_INCLUDES := -I $(SDKSTAGE)/opt/vc/include \
                 -I $(SDKSTAGE)/opt/vc/include/interface/vcos/pthreads \
-				-I $(SDKSTAGE)/opt/vc/include/interface/vmcs_host/linux
+				-I $(SDKSTAGE)/opt/vc/include/interface/vmcs_host/linux \
 
 MODULE_INCLUDES := -I$(MODULE_INC)
 
@@ -48,41 +49,39 @@ endif
 app_executable := $(obj_dir)/app
 
 .PHONY : $(depend_objects)
-$(depend_objects) : 
+$(depend_objects) :
 	make -C $(subst /$(obj_dir),,$(dir $@)) all
 
 LIBDIR := -L $(PLATFORM_ROOT)/libs/ilclient \
           -L $(PLATFORM_ROOT)/libs/vgfont \
-          -L /opt/vc/lib/
+          -L $(SDKSTAGE)/opt/vc/lib/ \
+	  -L $(PLATFORM_ROOT)
 
-LDFLAGS := -l pthread -l rt -l bcm_host -l vcos -l openmaxil -l mmal -l bcm_host -l mmal_util -l mmal_core
+LDFLAGS := -l pthread -l rt -l bcm_host -l vcos -l openmaxil -l mmal -l bcm_host -l mmal_util -l mmal_core -Wl,-rpath-link,/Volumes/ABYSS/Data/RasPi/firmware/opt/vc/lib
 
 # CFLAGS +=-DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -Wall -g -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi
 
 app : $(depend_objects)
-	gcc $^ $(LDFLAGS) $(LIBDIR) -o $@
-
-#clean : 
-#	rm -rf $(MODULE_OBJ)
+	$(CC) $^ $(LDFLAGS) $(LIBDIR) -o $@
 
 all : $(module_mkdirs) \
       $(module_object)
 
-mkdir_obj : 
+mkdir_obj :
 	mkdir $(MODULE_OBJ)
 
-$(module_object) : $(module_objects) 
-	ld -r $^ -o $@
+$(module_object) : $(module_objects)
+	$(LD) -r $^ -o $@
 
 $(MODULE_OBJ)/%.o : %.c $(module_dep_includes)
-	gcc -c $(INCLUDES) $< -o $@
+	$(CC) -c $(INCLUDES) $< -o $@
 
 clobber_mod_files := $(module_object) \
                      $(module_objects) \
                      $(app_executable)
 
-clean: 
-	rm -f $(clean_mod_files)
+clean:
+	find $(PLATFORM_ROOT) -name "*.o"|xargs rm; rm -f $(clean_mod_files)
 
 clobber : clobber_dependents
 	rm -f $(clobber_mod_files)
@@ -90,9 +89,9 @@ clobber : clobber_dependents
 clobber_dependent_cmd := $(foreach depModule, $(depend_objs), make -C $(depModule) clobber;)
 
 ifeq (${MAKELEVEL},0)
-clobber_dependents : 
+clobber_dependents :
 	$(clobber_dependent_cmd)
 else
-clobber_dependents : 
+clobber_dependents :
 endif
 

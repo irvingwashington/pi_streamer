@@ -1,9 +1,9 @@
-#include "stdio.h" 
-#include "stdlib.h" 
-#include "string.h" 
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 #include <sys/socket.h>
-#include <netinet/in.h> 
-#include <netdb.h> 
+#include <netinet/in.h>
+#include <netdb.h>
 #include "pthread.h"
 #include "fcntl.h"
 #include "mqueue.h"
@@ -34,7 +34,7 @@ typedef enum
 
 typedef struct
 {
-    unsigned int    id; 
+    unsigned int    id;
     unsigned int    ip;
     unsigned short  port;
 
@@ -43,7 +43,7 @@ typedef struct
 
 typedef struct
 {
-    unsigned int    id; 
+    unsigned int    id;
 
 } sMGMT_RTP_EVENT_DATA_RESET;
 
@@ -51,7 +51,7 @@ typedef struct
 typedef union
 {
     sMGMT_RTP_EVENT_DATA_ACTIVATE   activate;
-    sMGMT_RTP_EVENT_DATA_RESET      reset; 
+    sMGMT_RTP_EVENT_DATA_RESET      reset;
 
 } uMGMT_RTP_EVENT_DATA;
 
@@ -66,15 +66,15 @@ typedef struct
 
 typedef struct
 {
-    unsigned char       in_use; 
+    unsigned char       in_use;
     struct sockaddr_in  peer_addr;
-    unsigned char       sps_sent; 
-    unsigned char       pps_sent; 
-    unsigned char       idr_observed; 
+    unsigned char       sps_sent;
+    unsigned char       pps_sent;
+    unsigned char       idr_observed;
 
     void               *nal_to_rtp_instance;
 
-} sSESSION; 
+} sSESSION;
 
 
 // RTP manager control block.
@@ -88,20 +88,20 @@ typedef struct
     unsigned short      port;
     struct sockaddr_in  peer_addr;
     eMGMT_RTP_STATE     state;
-    sSESSION            sessions[32]; 
+    sSESSION            sessions[32];
 
 } sMGMT_RTP_CBLK;
 
 
-// Control block. 
+// Control block.
 static sMGMT_RTP_CBLK f_cblk;
 
 
 //  Sends NAL unit as RTP packets.
 static void rtp_send(
-    int             sock, 
-    sSESSION       *session, 
-    unsigned char  *nal_unit, 
+    int             sock,
+    sSESSION       *session,
+    unsigned char  *nal_unit,
     unsigned int    nal_unit_len
     )
 {
@@ -113,9 +113,9 @@ static void rtp_send(
     head = sx_nal_to_rtp_util_get(session->nal_to_rtp_instance,
                                   nal_unit,
                                   nal_unit_len);
-    temp = head; 
+    temp = head;
 
-    logger_log("Peer IP: 0x%x", session->peer_addr);
+    // logger_log("Peer IP: 0x%x", session->peer_addr);
 
     do
     {
@@ -128,12 +128,12 @@ static void rtp_send(
                         sizeof(struct sockaddr));
         assert(rv == temp->rtp_pkt_len);
 
-        temp = temp->next; 
+        temp = temp->next;
 
-    } while (temp); 
+    } while (temp);
 
     // Free the NAL unit.
-    sx_nal_to_rtp_util_free(head); 
+    sx_nal_to_rtp_util_free(head);
 }
 
 
@@ -141,7 +141,7 @@ static void idle_state_handler(
     sMGMT_RTP_MSG  *msg
     )
 {
-    
+
 }
 
 
@@ -316,12 +316,12 @@ static void rtp_thread(
             case MGMT_RTP_EVENT_RESET:
             {
                 reset_handler(&msg);
-                break; 
+                break;
             }
             case MGMT_RTP_EVENT_SERVICE:
             {
                 service_handler(&msg);
-                break; 
+                break;
             }
             default:
             {
@@ -358,7 +358,7 @@ static void timer_thread(
 static void rtp_thread_create(
     )
 {
-    pthread_create(&f_cblk.rtp_thread, NULL, (void *) &rtp_thread, NULL); 
+    pthread_create(&f_cblk.rtp_thread, NULL, (void *) &rtp_thread, NULL);
 
     pthread_create(&f_cblk.timer_thread, NULL, (void *) &timer_thread, NULL);
 }
@@ -383,8 +383,8 @@ void sx_mgmt_rtp_init(
                                0644,
                                &queue_attr);
 
-    f_cblk.rtp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-    assert(f_cblk.rtp_sock != 0); 
+    f_cblk.rtp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    assert(f_cblk.rtp_sock != 0);
 }
 
 
@@ -392,14 +392,14 @@ void sx_mgmt_rtp_open(
     void
     )
 {
-    // Create RTSP thread. 
-    rtp_thread_create(); 
+    // Create RTSP thread.
+    rtp_thread_create();
 }
 
 
 void sx_mgmt_rtp_activate(
-    unsigned int    id, 
-    unsigned int    ip, 
+    unsigned int    id,
+    unsigned int    ip,
     unsigned short  port
     )
 {
@@ -429,7 +429,7 @@ void sx_mgmt_rtp_reset(
 
     // Construct message.
     msg.event   = MGMT_RTP_EVENT_RESET;
-    msg.event_data.reset.id = id; 
+    msg.event_data.reset.id = id;
 
     // Queue message.
     mq_send(f_cblk.msg_queue,

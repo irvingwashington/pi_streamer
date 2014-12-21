@@ -1,0 +1,3 @@
+#!/bin/bash
+make clean
+SDKSTAGE=/Volumes/ABYSS/Data/RasPi/firmware CC="/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-cc -g -O0" make app
