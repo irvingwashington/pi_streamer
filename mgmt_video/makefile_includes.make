@@ -1,3 +1,3 @@
 DEP_INC := common mgmt_camera_hw
 
-DEP_OBJ := 
+DEP_OBJ :=

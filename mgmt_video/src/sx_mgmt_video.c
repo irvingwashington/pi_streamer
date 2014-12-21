@@ -1,5 +1,5 @@
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include "logger.h"
 #include "pthread.h"
 #include "mqueue.h"
@@ -11,12 +11,12 @@
 
 #define MGMT_VIDEO_MSG_QUEUE  "/mgmt_video_msg_queue"
 
-typedef enum 
+typedef enum
 {
-    MGMT_VIDEO_STATE_INIT, 
-    MGMT_VIDEO_STATE_ACTIVE 
+    MGMT_VIDEO_STATE_INIT,
+    MGMT_VIDEO_STATE_ACTIVE
 
-} eMGMT_VIDEO_STATE; 
+} eMGMT_VIDEO_STATE;
 
 
 typedef struct
@@ -34,13 +34,13 @@ typedef struct
 
     SX_QUEUE               nal_unit_queue;
 
-} sMGMT_VIDEO_CBLK; 
+} sMGMT_VIDEO_CBLK;
 
 
 typedef enum
 {
-   MGMT_VIDEO_EVENT_SERVICE, 
-   MGMT_VIDEO_EVENT_ACTIVATE, 
+   MGMT_VIDEO_EVENT_SERVICE,
+   MGMT_VIDEO_EVENT_ACTIVATE,
    MGMT_VIDEO_EVENT_RESET,
 
 } eMGMT_VIDEO_EVENT;
@@ -48,24 +48,24 @@ typedef enum
 
 typedef struct
 {
-    unsigned int    placeholder; 
+    unsigned int    placeholder;
 
-} sMGMT_SYS_EVENT_DATA_ACTIVATE; 
+} sMGMT_SYS_EVENT_DATA_ACTIVATE;
 
 
 typedef struct
 {
-    sMGMT_VIDEO_NAL_UNIT   *nal_unit; 
+    sMGMT_VIDEO_NAL_UNIT   *nal_unit;
 
-} sMGMT_SYS_EVENT_DATA_SERVICE; 
+} sMGMT_SYS_EVENT_DATA_SERVICE;
 
 
 typedef union
 {
-    sMGMT_SYS_EVENT_DATA_SERVICE    service; 
-    sMGMT_SYS_EVENT_DATA_ACTIVATE   activate; 
+    sMGMT_SYS_EVENT_DATA_SERVICE    service;
+    sMGMT_SYS_EVENT_DATA_ACTIVATE   activate;
 
-} uMGMT_VIDEO_EVENT_DATA; 
+} uMGMT_VIDEO_EVENT_DATA;
 
 
 typedef struct
@@ -73,14 +73,14 @@ typedef struct
     eMGMT_VIDEO_EVENT         event;
     uMGMT_VIDEO_EVENT_DATA    event_data;
 
-} sMGMT_VIDEO_MSG; 
+} sMGMT_VIDEO_MSG;
 
 
-// Video manager control block. 
-static sMGMT_VIDEO_CBLK f_cblk; 
+// Video manager control block.
+static sMGMT_VIDEO_CBLK f_cblk;
 
 
-// Initialize relevant system resources. 
+// Initialize relevant system resources.
 static void resources_init(
     void
     )
@@ -100,22 +100,22 @@ static void resources_init(
                                0644,
                                &queue_attr);
 
-    // Initialize mutex. 
-    pthread_mutex_init(&f_cblk.pps_mutex, NULL); 
+    // Initialize mutex.
+    pthread_mutex_init(&f_cblk.pps_mutex, NULL);
 
-    // Initialize mutex. 
-    pthread_mutex_init(&f_cblk.sps_mutex, NULL); 
+    // Initialize mutex.
+    pthread_mutex_init(&f_cblk.sps_mutex, NULL);
 
     f_cblk.nal_unit_queue = sx_queue_create();
 }
 
 
-// Activate handler. 
+// Activate handler.
 void idle_state_activate_event_handler(
     void
     )
 {
-    f_cblk.state = MGMT_VIDEO_STATE_ACTIVE; 
+    f_cblk.state = MGMT_VIDEO_STATE_ACTIVE;
 }
 
 
@@ -133,44 +133,44 @@ static void idle_state_service_event_handler(
 {
     if((msg->event_data.service.nal_unit->nal_unit[0] & 0x1F) == 0x07)
     {
-        // Cache SPS. 
-        logger_log("MGMT_VIDEO:: New SPS NAL unit"); 
+        // Cache SPS.
+        logger_log("MGMT_VIDEO:: New SPS NAL unit");
 
-        // Lock mutex. 
-        pthread_mutex_lock(&f_cblk.sps_mutex); 
+        // Lock mutex.
+        pthread_mutex_lock(&f_cblk.sps_mutex);
 
         if(f_cblk.sps_nal_unit != NULL)
         {
-            free(f_cblk.sps_nal_unit); 
+            free(f_cblk.sps_nal_unit);
         }
 
-        // Free mutex. 
-        f_cblk.sps_nal_unit = msg->event_data.service.nal_unit; 
+        // Free mutex.
+        f_cblk.sps_nal_unit = msg->event_data.service.nal_unit;
 
-        logger_log("MGMT_VIDEO:: New SPS NAL unit len %d", f_cblk.sps_nal_unit->nal_unit_len); 
+        logger_log("MGMT_VIDEO:: New SPS NAL unit len %d", f_cblk.sps_nal_unit->nal_unit_len);
 
-        pthread_mutex_unlock(&f_cblk.sps_mutex); 
+        pthread_mutex_unlock(&f_cblk.sps_mutex);
     }
     else if((msg->event_data.service.nal_unit->nal_unit[0] & 0x1F) == 0x08)
     {
-        // Cache PPS. 
-        logger_log("MGMT_VIDEO:: New PPS NAL unit"); 
+        // Cache PPS.
+        logger_log("MGMT_VIDEO:: New PPS NAL unit");
 
-        pthread_mutex_lock(&f_cblk.pps_mutex); 
+        pthread_mutex_lock(&f_cblk.pps_mutex);
 
         if(f_cblk.pps_nal_unit != NULL)
         {
-            free(f_cblk.pps_nal_unit); 
+            free(f_cblk.pps_nal_unit);
         }
 
-        pthread_mutex_unlock(&f_cblk.pps_mutex); 
+        pthread_mutex_unlock(&f_cblk.pps_mutex);
 
         f_cblk.pps_nal_unit = msg->event_data.service.nal_unit;
     }
     else
     {
-        // Free unit. 
-        free(msg->event_data.service.nal_unit); 
+        // Free unit.
+        free(msg->event_data.service.nal_unit);
     }
 }
 
@@ -193,7 +193,7 @@ static void active_state_reset_event_handler(
         free(nal_unit);
     }
 
-    f_cblk.state = MGMT_VIDEO_STATE_INIT; 
+    f_cblk.state = MGMT_VIDEO_STATE_INIT;
 }
 
 
@@ -207,18 +207,18 @@ static void idle_state_handler(
         {
 //            logger_log("(idle_state_handler): msg->event_data.service.nal_unit = 0x%x",
 //                       msg->event_data.service.nal_unit);
-            
+
             idle_state_service_event_handler(msg);
             break;
         }
         case MGMT_VIDEO_EVENT_ACTIVATE:
         {
-            idle_state_activate_event_handler(); 
+            idle_state_activate_event_handler();
             break;
         }
         case MGMT_VIDEO_EVENT_RESET:
         {
-            break; 
+            break;
         }
     }
 }
@@ -231,8 +231,8 @@ static void active_state_handler(
     switch(msg->event)
     {
         case MGMT_VIDEO_EVENT_SERVICE:
-            
-            active_state_service_event_handler(msg); 
+
+            active_state_service_event_handler(msg);
             break;
 
         case MGMT_VIDEO_EVENT_ACTIVATE:
@@ -243,8 +243,8 @@ static void active_state_handler(
 
             logger_log("RESET Received");
 
-            active_state_reset_event_handler(msg); 
-            break; 
+            active_state_reset_event_handler(msg);
+            break;
     }
 }
 
@@ -253,8 +253,8 @@ static void mgmt_video_thread(
     void * arg
     )
 {
-    sMGMT_VIDEO_MSG msg; 
-    unsigned int    bytes_read; 
+    sMGMT_VIDEO_MSG msg;
+    unsigned int    bytes_read;
 
 
     while(1)
@@ -268,22 +268,22 @@ static void mgmt_video_thread(
         switch(f_cblk.state)
         {
             case MGMT_VIDEO_STATE_INIT:
-                idle_state_handler(&msg); 
-                break; 
+                idle_state_handler(&msg);
+                break;
 
             case MGMT_VIDEO_STATE_ACTIVE:
-                active_state_handler(&msg); 
-                break; 
+                active_state_handler(&msg);
+                break;
 
-            default: 
-                break; 
+            default:
+                break;
         }
     }
 }
 
 
 static void video_capture_thread(
-    void *arg 
+    void *arg
     )
 {
     int                     status;
@@ -291,8 +291,8 @@ static void video_capture_thread(
     unsigned int            curr_dword;
     unsigned char           temp;
     sMGMT_VIDEO_MSG         msg;
-    sMGMT_VIDEO_NAL_UNIT   *nal_unit; 
-    unsigned char           file_end; 
+    sMGMT_VIDEO_NAL_UNIT   *nal_unit;
+    unsigned char           file_end;
 
 
     while(1)
@@ -338,11 +338,11 @@ void sx_mgmt_video_init(
     void
     )
 {
-    logger_log("(mgmt_video_init): Invoked."); 
+    logger_log("(mgmt_video_init): Invoked.");
 
 
-    // Initialize resources. 
-    resources_init(); 
+    // Initialize resources.
+    resources_init();
 }
 
 
@@ -350,12 +350,12 @@ void sx_mgmt_video_open(
     void
     )
 {
-    logger_log("(mgmt_video_open): Invoked."); 
+    logger_log("(mgmt_video_open): Invoked.");
 
-    // Create video manager thread. 
-    mgmt_video_thread_create(); 
+    // Create video manager thread.
+    mgmt_video_thread_create();
 
-    // Create video capturer thread. 
+    // Create video capturer thread.
     video_capture_thread_create();
 
     sx_camera_hw_open();
@@ -366,12 +366,12 @@ void sx_mgmt_video_activate(
     void
     )
 {
-    sMGMT_VIDEO_MSG  msg; 
+    sMGMT_VIDEO_MSG  msg;
 
 
-    logger_log("(mgmt_video_activate): Invoked."); 
+    logger_log("(mgmt_video_activate): Invoked.");
 
-    msg.event = MGMT_VIDEO_EVENT_ACTIVATE; 
+    msg.event = MGMT_VIDEO_EVENT_ACTIVATE;
 
     mq_send(f_cblk.msg_queue,
             (char *) &msg,
@@ -384,12 +384,12 @@ void sx_mgmt_video_reset(
     void
     )
 {
-    sMGMT_VIDEO_MSG  msg; 
+    sMGMT_VIDEO_MSG  msg;
 
 
-    logger_log("mgmt_video_reset(): Invoked."); 
+    logger_log("mgmt_video_reset(): Invoked.");
 
-    msg.event = MGMT_VIDEO_EVENT_RESET; 
+    msg.event = MGMT_VIDEO_EVENT_RESET;
 
     mq_send(f_cblk.msg_queue,
             (char *) &msg,
@@ -402,12 +402,12 @@ unsigned char sx_mgmt_video_is_key_frame(
     sMGMT_VIDEO_NAL_UNIT   *nal_unit
     )
 {
-    if((nal_unit->nal_unit[0] & 0x1F) == 0x05) 
+    if((nal_unit->nal_unit[0] & 0x1F) == 0x05)
     {
-        return 1; 
+        return 1;
     }
 
-    return 0; 
+    return 0;
 }
 
 
@@ -415,31 +415,31 @@ sMGMT_VIDEO_NAL_UNIT * sx_mgmt_video_pps_get(
     void
     )
 {
-    sMGMT_VIDEO_NAL_UNIT       *nal_unit; 
+    sMGMT_VIDEO_NAL_UNIT       *nal_unit;
 
 
     logger_log("(mgmt_video_get_pps_nal_unit): Invoked.\n");
 
-    // Mutex lock. 
-    pthread_mutex_lock(&f_cblk.pps_mutex); 
+    // Mutex lock.
+    pthread_mutex_lock(&f_cblk.pps_mutex);
 
-    if(f_cblk.pps_nal_unit == NULL) 
+    if(f_cblk.pps_nal_unit == NULL)
     {
-        nal_unit = NULL; 
+        nal_unit = NULL;
 
-        goto cleanup; 
+        goto cleanup;
     }
 
-    nal_unit = malloc(sizeof(sMGMT_VIDEO_NAL_UNIT)); 
+    nal_unit = malloc(sizeof(sMGMT_VIDEO_NAL_UNIT));
 
-    // Copy PPS NAL unit. 
-    *nal_unit = *f_cblk.pps_nal_unit; 
+    // Copy PPS NAL unit.
+    *nal_unit = *f_cblk.pps_nal_unit;
 
 cleanup:
-    // Mutex unlock. 
-    pthread_mutex_unlock(&f_cblk.pps_mutex); 
+    // Mutex unlock.
+    pthread_mutex_unlock(&f_cblk.pps_mutex);
 
-    return nal_unit; 
+    return nal_unit;
 }
 
 
@@ -447,35 +447,35 @@ sMGMT_VIDEO_NAL_UNIT * sx_mgmt_video_sps_get(
     void
     )
 {
-    sMGMT_VIDEO_NAL_UNIT   *nal_unit; 
+    sMGMT_VIDEO_NAL_UNIT   *nal_unit;
 
 
-    logger_log("mgmt_video_get_sps_nal_unit(): Invoked.\n"); 
+    logger_log("mgmt_video_get_sps_nal_unit(): Invoked.\n");
 
-    // Mutex lock. 
-    pthread_mutex_lock(&f_cblk.sps_mutex); 
+    // Mutex lock.
+    pthread_mutex_lock(&f_cblk.sps_mutex);
 
-    if(f_cblk.sps_nal_unit == NULL) 
+    if(f_cblk.sps_nal_unit == NULL)
     {
-        nal_unit = NULL; 
+        nal_unit = NULL;
 
-        goto cleanup; 
+        goto cleanup;
     }
 
-    nal_unit = malloc(sizeof(sMGMT_VIDEO_NAL_UNIT)); 
+    nal_unit = malloc(sizeof(sMGMT_VIDEO_NAL_UNIT));
 
-    // Copy PPS NAL unit. 
-    *nal_unit = *f_cblk.sps_nal_unit; 
+    // Copy PPS NAL unit.
+    *nal_unit = *f_cblk.sps_nal_unit;
 
-    logger_log("nal unit %d", nal_unit->nal_unit_len); 
+    logger_log("nal unit %d", nal_unit->nal_unit_len);
 
 cleanup:
-    // Mutex unlock. 
-    pthread_mutex_unlock(&f_cblk.sps_mutex); 
+    // Mutex unlock.
+    pthread_mutex_unlock(&f_cblk.sps_mutex);
 
-    return nal_unit; 
+    return nal_unit;
 }
-    
+
 
 sMGMT_VIDEO_NAL_UNIT * sx_mgmt_video_get_nal_unit(
     void
@@ -489,5 +489,5 @@ void sx_mgmt_video_free_nal_unit(
     sMGMT_VIDEO_NAL_UNIT   *nal_unit
     )
 {
-    free(nal_unit); 
+    free(nal_unit);
 }

@@ -1,5 +1,5 @@
 
-#include "stdio.h" 
+#include "stdio.h"
 #include "assert.h"
 
 #include "sx_mgmt_sys.h"
@@ -12,6 +12,6 @@ int main(
 
     mgmt_sys_open();
 
-    return 0; 
+    return 0;
 }
 

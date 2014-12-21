@@ -12,7 +12,7 @@ typedef struct
 
 extern void sx_camera_hw_open(
     void
-    ); 
+    );
 
 extern sSX_CAMERA_HW_BUFFER * sx_camera_hw_get(
     void

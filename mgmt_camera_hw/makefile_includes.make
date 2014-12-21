@@ -1,3 +1,3 @@
-DEP_INC := common 
+DEP_INC := common
 
-DEP_OBJ := 
+DEP_OBJ :=

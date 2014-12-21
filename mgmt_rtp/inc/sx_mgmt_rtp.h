@@ -12,7 +12,7 @@ extern void sx_mgmt_rtp_open(
     );
 
 extern void sx_mgmt_rtp_activate(
-    unsigned int    id, 
+    unsigned int    id,
     unsigned int    ip,
     unsigned short  port
     );

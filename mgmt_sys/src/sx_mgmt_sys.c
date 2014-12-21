@@ -12,22 +12,22 @@
 
 typedef enum
 {
-   MGMT_SYS_EVENT_PLAY, 
-   MGMT_SYS_EVENT_TEARDOWN, 
+   MGMT_SYS_EVENT_PLAY,
+   MGMT_SYS_EVENT_TEARDOWN,
 
 } eMGMT_SYS_EVENT;
 
 
 typedef struct
 {
-    unsigned int    id; 
+    unsigned int    id;
 
 } sMGMT_SYS_EVENT_DATA_TEARDOWN;
 
 
 typedef struct
 {
-    unsigned int    id; 
+    unsigned int    id;
     unsigned int    ip;
     unsigned short  port;
 
@@ -37,7 +37,7 @@ typedef struct
 typedef union
 {
     sMGMT_SYS_EVENT_DATA_PLAY       play;
-    sMGMT_SYS_EVENT_DATA_TEARDOWN   teardown; 
+    sMGMT_SYS_EVENT_DATA_TEARDOWN   teardown;
 
 } uMGMT_SYS_EVENT_DATA;
 
@@ -54,13 +54,13 @@ typedef struct
 {
     pthread_t       thread_id;
     mqd_t           msg_queue;
-    unsigned int    active_session; 
+    unsigned int    active_session;
 
 } sMGMT_SYS_CBLK;
 
 static sMGMT_SYS_CBLK   f_cblk;
 
-static void rerouces_init(
+static void resources_init(
     void
     )
 {
@@ -106,7 +106,7 @@ static void mgmt_rtsp_cback(
     if(event == MGMT_RTSP_EVENT_TEARDOWN)
     {
         msg.event = MGMT_SYS_EVENT_TEARDOWN;
-        msg.event_data.teardown.id = event_data->teardown.id; 
+        msg.event_data.teardown.id = event_data->teardown.id;
 
         mq_send(f_cblk.msg_queue,
                 (char *) &msg,
@@ -129,8 +129,8 @@ static void mgmt_sys_thread(
     // Open RTP manager.
     sx_mgmt_rtp_open();
 
-    // Open video manager. 
-    sx_mgmt_video_open(); 
+    // Open video manager.
+    sx_mgmt_video_open();
 
     while(1)
     {
@@ -153,27 +153,27 @@ static void mgmt_sys_thread(
                 {
                     logger_log("mgmt_video_activate() Invoked");
 
-                    sx_mgmt_video_activate(); 
+                    sx_mgmt_video_activate();
                 }
 
-                f_cblk.active_session++; 
+                f_cblk.active_session++;
 
                 break;
             }
             case MGMT_SYS_EVENT_TEARDOWN:
             {
-                // Reset associate RTP session. 
-                sx_mgmt_rtp_reset(msg.event_data.teardown.id); 
+                // Reset associate RTP session.
+                sx_mgmt_rtp_reset(msg.event_data.teardown.id);
 
-                f_cblk.active_session--; 
+                f_cblk.active_session--;
 
                 if(f_cblk.active_session == 0)
                 {
                     logger_log("mgmt_video_reset() Invoked");
 
-                    sx_mgmt_video_reset(); 
+                    sx_mgmt_video_reset();
                 }
-                break; 
+                break;
             }
             default:
             {
@@ -194,10 +194,10 @@ static void mgmt_sys_thread_create(
 void mgmt_sys_init(
     )
 {
-    printf("mgmt_sys_init(): Invoked.\n"); 
+    printf("mgmt_sys_init(): Invoked.\n");
 
-    // Initialize resources.
-    rerouces_init();
+    // Initialize resources. mqueue
+    resources_init();
 
     // Initialize RTSP manager.
     sx_mgmt_rtsp_init(mgmt_rtsp_cback, &f_cblk);
@@ -205,15 +205,15 @@ void mgmt_sys_init(
     // Initialize RTP manager.
     sx_mgmt_rtp_init();
 
-    // Initialize video manager. 
-    sx_mgmt_video_init(); 
+    // Initialize video manager.
+    sx_mgmt_video_init();
 }
 
 
 void mgmt_sys_open(
     )
 {
-    printf("mgmt_sys_open(): Invoked.\n"); 
+    printf("mgmt_sys_open(): Invoked.\n");
 
     mgmt_sys_thread_create();
 
