@@ -1,5 +1,5 @@
 MODULE_DIR := .
-#CC=/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-cc
+CC=/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-cc
 LD=/Volumes/RPi-EABI-sm/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-ld
 include $(MODULE_DIR)/makefile_includes.make
 

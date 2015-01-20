@@ -591,14 +591,14 @@ static void default_status(
 
    // Now set anything non-zero
    state->timeout = 5000;     // 5s delay before take image
-   state->width = 640;       // Default to 1080p
+   state->width = 720;       // Default to 1080p
    state->height = 480;
-   state->bitrate = 1000000; // This is a decent default bitrate for 1080p
-   state->framerate = 30;
+   state->bitrate = 500000; // This is a decent default bitrate for 1080p
+   state->framerate = 25;
    state->intraperiod = 10;    // Not set
    state->demoMode = 0;
    state->demoInterval = 250; // ms
-   state->immutableInput = 1;
+   state->immutableInput = 0;
 
    // Setup preview window defaults
    raspipreview_set_defaults(&state->preview_parameters);

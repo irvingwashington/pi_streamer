@@ -1,10 +1,15 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "assert.h"
 
@@ -18,7 +23,7 @@
 #define SETUP               "SETUP"
 #define PLAY                "PLAY"
 #define TEARDOWN            "TEARDOWN"
-#define SERVER_HOST         "192.168.1.92"
+#define WIFI_IDENTIFIER     "wlan0"
 
 typedef enum
 {
@@ -199,14 +204,14 @@ static char * describe_handler(
     char   *sdp_str = "v=0\r\n"
                   "o=- 1364163928239452 1 IN IP4 %s\r\n"
                   "s=H.264 Video, streamed by the LIVE555 Media Server\r\n"
-                  "i=pi_encode.264\r\n"
+                  "i=live.264\r\n"
                   "t=0 0\r\n"
                   "a=tool:LIVE555 Streaming Media v2013.01.25\r\n"
                   "a=type:broadcast\r\n"
                   "a=control:*\r\n"
                   "a=range:npt=0-\r\n"
                   "a=x-qt-text-nam:H.264 Video, streamed by the LIVE555 Media Server\r\n"
-                  "a=x-qt-text-inf:pi_encode.264\r\n"
+                  "a=x-qt-text-inf:live.264\r\n"
                   "m=video 0 RTP/AVP 96\r\n"
                   "c=IN IP4 0.0.0.0\r\n"
                   "b=AS:500\r\n"
@@ -266,7 +271,8 @@ static char * setup_handler(
                 "CSeq: %d\r\n\r\n",
                 cseq);
     } else {
-
+        char addr_buffer[INET_ADDRSTRLEN];
+        assert(get_wlan_addr((char*) &addr_buffer) == 1);
         snprintf(out,
                 RTSP_BUF_SIZE_MAX,
                 "RTSP/1.0 200 OK\r\n"
@@ -274,7 +280,7 @@ static char * setup_handler(
                 "Transport: RTP/AVP;unicast;destination=%s;source=%s;client_port=%d-%d;server_port=%d-%d\r\n"
                 "Session: %08X\r\n\r\n",
                 cseq,
-                SERVER_HOST,
+                addr_buffer,
                 session->client_ip_str,
                 dst_port,
                 dst_port+1,
@@ -302,7 +308,11 @@ static char * play_handler(
     char * out = malloc(RTSP_BUF_SIZE_MAX);
 
     char * rtp_info = malloc(500* sizeof(char));
-    sprintf(rtp_info, "RTP-Info: url=rtsp://%s:8554/pi_encode.264/track1;seq=61719;rtptime=4288250384\r\n", SERVER_HOST);
+
+    char addr_buffer[INET_ADDRSTRLEN];
+    assert(get_wlan_addr((char*) &addr_buffer) == 1);
+
+    sprintf(rtp_info, "RTP-Info: url=rtsp://%s:%i/live.264/track1;seq=61719;rtptime=4288250384\r\n", addr_buffer, MGMT_RTSP_PORT);
      // Fill in the response:
     snprintf(out, RTSP_BUF_SIZE_MAX,
             "RTSP/1.0 200 OK\r\n"
@@ -587,7 +597,36 @@ void sx_mgmt_rtsp_open(
 {
     printf("mgmt_rtsp_open(): Inovked.\n");
 
+    char addr_buffer[INET_ADDRSTRLEN];
+    assert(get_wlan_addr((char*) &addr_buffer) == 1);
+
+    printf("Stream addr: rtsp://%s:%i/live.264\n", addr_buffer, MGMT_RTSP_PORT);
+
+
     // Create RTSP thread.
     tcp_listener_create();
 }
 
+int get_wlan_addr(char * addr) {
+  struct ifaddrs * ifAddrStruct=NULL;
+  struct ifaddrs * ifa=NULL;
+  void * tmpAddrPtr=NULL;
+  int found=-1;
+  getifaddrs(&ifAddrStruct);
+
+  for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+    if (!ifa->ifa_addr) { continue; }
+
+    if (ifa->ifa_addr->sa_family == AF_INET) {
+      tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+      if (strcmp(ifa->ifa_name, WIFI_IDENTIFIER) == 0) {
+        char addressBuffer[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+        strncpy(addr, addressBuffer, INET_ADDRSTRLEN);
+        found=1;
+      }
+    }
+  }
+  if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
+  return found;
+}
